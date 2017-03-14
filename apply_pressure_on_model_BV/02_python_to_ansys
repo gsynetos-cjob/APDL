@@ -1,0 +1,14 @@
+cmsel,s,sc_hopper,elem
+*get,ne,elem,0,count
+*get,le,elem,0,num,min            !redefine the lowest element number in the selected set
+*dim,Load,array,ne,2
+*VREAD,Load,'C:/hopperpres','txt',' ',JIK,2,ne,1, ,
+(F12.0, F13.1)
+*END
+
+*do,i,1,ne,1
+  SFE,le,2,pres,,Load(i,2)
+  le=elnext(le)
+*enddo
+
+allsel
