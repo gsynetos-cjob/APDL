@@ -1,0 +1,20 @@
+!Select the name selection for the hull
+!Returns a txt file with  the element ID and the xyz coordinates of the centroid
+!for each element
+
+cmsel,s,sc_hull,elem
+*get,ne,elem,0,count
+*get,le,elem,0,num,min
+*dim,gtable,array,ne,4
+*do,i,1,ne,1
+    *SET,gtable(i,1),le
+    *SET,gtable(i,2),centrx(le)
+    *SET,gtable(i,3),centry(le)
+    *SET,gtable(i,4),centrz(le)
+    cmsel,s,sc_hull,elem
+    *SET,le,elnext(le)
+*enddo
+*CFOPEN,'hull','txt',' '
+*VWRITE,gtable(1,1,1),gtable(1,2,1),gtable(1,3,1),gtable(1,4,1), , , , , ,
+(F12.0 , F12.3 , F12.3 , F12.3)
+*CFCLOS
