@@ -1,0 +1,72 @@
+!Select the name selection for the hopper area
+!Returns a txt file with the element ID and the xyz coordinates of the centroid
+!and the direction cosine of z axis for each element
+
+cmsel,s,sc_hopper,elem
+
+*get, Emx, elem,,num,maxd	!highest element number defined
+*get,Ecoun,elem,,count	!number of elements in the selected set
+
+*dim,L_Info,array,Emx,8		!make 1 large array for use of quick *vget functions
+*dim,Masking,array,Emx,1		!masking array to only retrieve data from selected elements
+*dim,Info,array,Ecoun,11	       !make shorter array for selected elementes for smaller do-loop
+*vget,Masking(1),elem,,esel	       !fill masking array
+
+*vmask,Masking(1)			!use masking
+*vfill,L_Info(1,1),ramp,1,1		!to track element numbers after compression
+
+*vmask,Masking(1)
+*vget,L_Info(1,2),elem,,node,1	!node number of element I node
+*vmask,Masking(1)
+*vget,L_Info(1,3),elem,,node,2	!J-node
+*vmask,Masking(1)
+*vget,L_Info(1,4),elem,,node,3	!K-node
+*vmask,Masking(1)
+*vget,L_Info(1,5),elem,,node,4	!just for double checking option
+*vmask,Masking(1)
+*vget,L_Info(1,6),elem,,cent,x	!centroid x
+*vmask,Masking(1)
+*vget,L_Info(1,7),elem,,cent,y	!centroid y
+*vmask,Masking(1)
+*vget,L_Info(1,8),elem,,cent,z	!centroid z
+
+
+*vmask,Masking(1)
+*vfun,Info(1,1),comp,L_info(1,1)	!compress/filter out empty rows
+*vmask,Masking(1)
+*vfun,Info(1,2),comp,L_info(1,2)
+*vmask,Masking(1)
+*vfun,Info(1,3),comp,L_info(1,3)
+*vmask,Masking(1)
+*vfun,Info(1,4),comp,L_info(1,4)
+*vmask,Masking(1)
+*vfun,Info(1,5),comp,L_info(1,5)
+*vmask,Masking(1)
+*vfun,Info(1,6),comp,L_info(1,6)
+*vmask,Masking(1)
+*vfun,Info(1,7),comp,L_info(1,7)
+*vmask,Masking(1)
+*vfun,Info(1,8),comp,L_info(1,8)
+
+
+*do,i,1,Ecoun
+Info(i,9)=normnx(Info(i,2),Info(i,3),Info(i,4))		!X-direction cosine of the normal to the plane containing nodes N1, N2, and N3.
+Info(i,10)=normny(Info(i,2),Info(i,3),Info(i,4))	!Y-direction cosine of the normal to the plane containing nodes N1, N2, and N3.
+Info(i,11)=normnz(Info(i,2),Info(i,3),Info(i,4))	!Z-direction cosine of the normal to the plane containing nodes N1, N2, and N3.
+*enddo
+
+
+*CFOPEN,'hopperinfo','txt',' '
+*VWRITE,
+(10x,'ID', 6x,'node 1',6x, 'node 2',6x, 'node 3',6x, 'node 4',2x, 'centroid x',2x, 'centroid y',2x,'centroid z',3x,'x dir cos',3x,'y dir cos',3x,'z dir cos', )
+*VWRITE,Info(1,1,1),Info(1,2,1),Info(1,3,1),Info(1,4,1),Info(1,5,1) ,Info(1,6,1) ,Info(1,7,1) ,Info(1,8,1) ,Info(1,9,1) ,Info(1,10,1),Info(1,11,1),
+(1F12.0 , 4F12.0, 3F12.3, 3F12.3)
+*CFCLOS
+*END
+
+
+*CFOPEN,'hopper','txt',' '
+*VWRITE,Info(1,1,1),Info(1,6,1) ,Info(1,7,1) ,Info(1,8,1) ,Info(1,11,1),
+(1F12.0 , 3F12.3, 1F12.3)
+*CFCLOS
+*END
