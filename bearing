@@ -1,0 +1,35 @@
+\SOLU
+set,1
+
+CSYS,cyl
+*AFUN,Deg
+cmsel,s,MB,NODE
+*get,nrNode,NODE,,count
+*dim,Results,array,nrNode,5	
+*vget,Results(1,1),NODE,,NLIST	!Node numbers
+
+!=====================================================
+!THE FOLLOWING IS NOT CORRECT_ TO EXPLAIN WHY
+!----------------------------------------------
+!*vget,Results(1,2),NODE,,LOC,X
+!*vget,Results(1,3),NODE,,LOC,Y
+!*vget,Results(1,4),NODE,,LOC,Z
+!=====================================================
+
+*do,ii,1,nrNode
+  *get,Results(ii,2),node,results(ii,1),LOC,X
+  *get,Results(ii,3),node,results(ii,1),LOC,Y
+  *get,Results(ii,4),node,results(ii,1),LOC,Z
+   *if,Results(ii,3),ABLT,90,THEN
+	Results(ii,5)=100*cos(Results(ii,3))
+   *else
+	Results(ii,5)=0
+   *endif
+F,results(ii,1),FX,Results(ii,5) 	!Apply The Bearing Force
+*enddo
+
+!Write data to file
+*cfopen,'nodes','txt',' '
+*vwrite,Results(1,1),Results(1,2),Results(1,3),Results(1,4),Results(1,5)
+(F10.0, F20.3 , F20.3, F20.3, F20.3)
+*cfclose
