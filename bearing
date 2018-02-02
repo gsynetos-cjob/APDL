@@ -1,35 +1,59 @@
 \SOLU
-set,1
 
-CSYS,cyl
-*AFUN,Deg
-cmsel,s,MB,NODE
-*get,nrNode,NODE,,count
-*dim,Results,array,nrNode,5	
-*vget,Results(1,1),NODE,,NLIST	!Node numbers
+!-----------
+!USER INPUT
+!------------
+bearing_force = 135 	!Magnitude of bearing force
+alpha = 180 		!Spreading angle of the contact area (120degrees is reasonable)
+beta =  0  		!The angle to rotate the nodal coordinate system. It is required for the application of the Nodal Force (see NMODIF command)
+!----------
 
-!=====================================================
-!THE FOLLOWING IS NOT CORRECT_ TO EXPLAIN WHY
-!----------------------------------------------
-!*vget,Results(1,2),NODE,,LOC,X
-!*vget,Results(1,3),NODE,,LOC,Y
-!*vget,Results(1,4),NODE,,LOC,Z
-!=====================================================
+CSYS,beta0 !Call the Corresponding Coordinate System
+*AFUN,Deg	!Calculation of angles is with Degrees (it is used in the cos(phi) fuction
 
+cmsel,s,MB,NODE	!Select Nodal Group previously defined by a Name Selection
+
+*get,nrNode,NODE,,count	!Returns the total Amount of Nodes in the selection
+*dim,Results,array,nrNode,6		!Create an Array size (nrNode x 6)
+*vget,Results(1,1),NODE,,NLIST	!Write the Node numbers in the first column
+
+sum_cos = 0
 *do,ii,1,nrNode
-  *get,Results(ii,2),node,results(ii,1),LOC,X
+  *get,Results(ii,2),node,results(ii,1),LOC,X	!Write the X-coordinate in the 2nd column
   *get,Results(ii,3),node,results(ii,1),LOC,Y
   *get,Results(ii,4),node,results(ii,1),LOC,Z
-   *if,Results(ii,3),ABLT,90,THEN
-	Results(ii,5)=100*cos(Results(ii,3))
-   *else
-	Results(ii,5)=0
+  
+   *if,Results(ii,3),ABLT,0.5*alpha,THEN		!If statement that verifies that which node belongs to the region that we the load is to be applied
+   sum_cos = sum_cos + cos(Results(ii,3))		!Calculate the sum of the cosinus. It is used in the next loop to divide with the total Load 
    *endif
-F,results(ii,1),FX,Results(ii,5) 	!Apply The Bearing Force
 *enddo
 
-!Write data to file
+*do,ii,1,nrNode
+   *if,Results(ii,3),ABLT,0.5*alpha,THEN
+	Results(ii,6)= cos(Results(ii,3))/sum_cos		!Calculate per each node the weight factor
+	NMODIF,results(ii,1),,,,beta,,			!Modify the coordinate system of each node with respect to the beta angle
+	F,results(ii,1),FX,bearing_force*Results(ii,6) 	!Apply The Bearing Force
+   *endif
+
+*enddo
+
+cmsel,s,MB,NODE
+NMODIF,ALL,,,,-beta,,
+
+!-----------
+!DEBUGGING
+!-----------
+
+!Write the sum_cos to file
+!--------------------
+*cfopen,'cos_sum','txt',' '
+*vwrite,sum_cos
+(F20.3)
+*cfclose
+
+!Write the Array to file
+!--------------------
 *cfopen,'nodes','txt',' '
-*vwrite,Results(1,1),Results(1,2),Results(1,3),Results(1,4),Results(1,5)
-(F10.0, F20.3 , F20.3, F20.3, F20.3)
+*vwrite,Results(1,1),Results(1,2),Results(1,3),Results(1,4),Results(1,5),Results(1,6)
+(F10.0, F20.3 , F20.3, F20.3, F20.3, F20.3)
 *cfclose
