@@ -1,16 +1,24 @@
-\SOLU
+!   Commands inserted into this file will be executed just prior to the ANSYS SOLVE command.
+!   These commands may supersede command settings set by Workbench.
+
+!   Active UNIT system in Workbench when this object was created:  Metric (m, kg, N, s, V, A)
+!   NOTE:  Any data that requires units (such as mass) is assumed to be in the consistent solver unit system.
+!                See Solving Units in the help system for more information.
+
+!-------------------------------------
+! M A I N    B E A R I N G    L O A D
+!-------------------------------------
 
 /NERR,5,99999999,,0,0 ! Because of the issue turn off the warnings
 !-----------
 !USER INPUT
 !------------
 bearing_force = 135 	!Magnitude of bearing force
-alpha = 180 		!Spreading angle of the contact area (120degrees is reasonable)
-beta =  0  		!The angle to rotate the nodal coordinate system. It is required for the application of the Nodal Force (see NMODIF command)
+alpha = 120 		!Spreading angle of the contact area (120degrees is reasonable)
+beta =  90  		!The angle to rotate the nodal coordinate system. It is required for the application of the Nodal Force (see NMODIF command)
 !----------
 
-LOCAL,1180,1,182.45,0,0,beta,,,,, !Create a Local Cylindrical System
-!CSYS,beta0 !Call the Corresponding Coordinate System
+LOCAL,1000,1,182.45,0,0,beta,,,,, !Create a Local Cylindrical System
 *AFUN,Deg	!Calculation of angles is with Degrees (it is used in the cos(phi) fuction
 
 cmsel,s,MB,NODE	!Select Nodal Group previously defined by a Name Selection
@@ -33,31 +41,49 @@ sum_cos = 0
 *do,ii,1,nrNode
    *if,Results(ii,3),ABLT,0.5*alpha,THEN
 	Results(ii,6)= cos(Results(ii,3))/sum_cos		!Calculate per each node the weight factor
-	NMODIF,results(ii,1),,,,beta,,			!Modify the coordinate system of each node with respect to the beta angle
-	F,results(ii,1),FX,bearing_force*Results(ii,6) 	!Apply The Bearing Force
-	F,results(ii,1),FX,bearing_force*Results(ii,6)*cos(beta) !TO VERIFY THIS
-	F,results(ii,1),FY,bearing_force*Results(ii,6)*sin(beta) !TO VERIFY THIS
+	F,results(ii,1),FX,bearing_force*Results(ii,6)*cos(beta)
+	F,results(ii,1),FY,bearing_force*Results(ii,6)*sin(beta)
    *endif
 
 *enddo
 
-cmsel,s,MB,NODE
-NMODIF,ALL,,,,-beta,,
+!--------------------------------------
+! L O W E R    B E A R I N G   L O A D
+!--------------------------------------
 
 !-----------
-!DEBUGGING
-!-----------
+!USER INPUT
+!------------
+bearing_force = 135 	!Magnitude of bearing force
+alpha = 120 		!Spreading angle of the contact area (120degrees is reasonable)
+beta =  beta+180  		!The angle to rotate the nodal coordinate system. It is required for the application of the Nodal Force (see NMODIF command)
+!----------
 
-!Write the sum_cos to file
-!--------------------
-*cfopen,'cos_sum','txt',' '
-*vwrite,sum_cos
-(F20.3)
-*cfclose
+LOCAL,1180,1,182.45,0,0,beta,,,,, !Create a Local Cylindrical System
+*AFUN,Deg	!Calculation of angles is with Degrees (it is used in the cos(phi) fuction
 
-!Write the Array to file
-!--------------------
-*cfopen,'nodes','txt',' '
-*vwrite,Results(1,1),Results(1,2),Results(1,3),Results(1,4),Results(1,5),Results(1,6)
-(F10.0, F20.3 , F20.3, F20.3, F20.3, F20.3)
-*cfclose
+cmsel,s,LB,NODE	!Select Nodal Group previously defined by a Name Selection
+
+*get,nrNode,NODE,,count	!Returns the total Amount of Nodes in the selection
+*dim,Results,array,nrNode,6		!Create an Array size (nrNode x 6)
+*vget,Results(1,1),NODE,,NLIST	!Write the Node numbers in the first column
+
+sum_cos = 0
+*do,ii,1,nrNode
+  *get,Results(ii,2),node,results(ii,1),LOC,X	!Write the X-coordinate in the 2nd column
+  *get,Results(ii,3),node,results(ii,1),LOC,Y
+  *get,Results(ii,4),node,results(ii,1),LOC,Z
+  
+   *if,Results(ii,3),ABLT,0.5*alpha,THEN		!If statement that verifies that which node belongs to the region that we the load is to be applied
+   sum_cos = sum_cos + cos(Results(ii,3))		!Calculate the sum of the cosinus. It is used in the next loop to divide with the total Load 
+   *endif
+*enddo
+
+*do,ii,1,nrNode
+   *if,Results(ii,3),ABLT,0.5*alpha,THEN
+	Results(ii,6)= cos(Results(ii,3))/sum_cos		!Calculate per each node the weight factor
+	F,results(ii,1),FX,bearing_force*Results(ii,6)*cos(beta)
+	F,results(ii,1),FY,bearing_force*Results(ii,6)*sin(beta)
+   *endif
+
+*enddo
